@@ -97,6 +97,8 @@ begin
 					semaforo2_verde <= '0';
 					semaforo2_amarillo <= '1';
 					semaforo1_rojo <= '1';
+					semaforo1_amarillo <= '0';
+					semaforo2_rojo <= '0';
 					if(contadorSeg = 5) then
 						edo_sigu <= s0;
 					else 
