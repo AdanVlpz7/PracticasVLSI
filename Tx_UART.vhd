@@ -23,12 +23,11 @@ signal BUFF    : std_logic_vector(121 downto 0);
 signal flag    : std_logic:='0';
 signal PRE_VAL : integer range 0 to 41600;
 signal baud    : std_logic_vector(2 downto 0);
-signal i       : integer range 0 to 4;
+signal i       : integer range 0 to 15;
+signal j       : integer range 0 to 4;
 signal pulso   : std_logic:='0';
 signal conta2  : integer range 0 to 50000000:=0;
 signal dato_bin: std_logic_vector(3 downto 0);
-signal hex_val :std_logic_vector(7 downto 0):=(others=>'0');
-signal conta3 : integer range 0 to 15;
 
 begin
 
@@ -36,7 +35,7 @@ TX_divisor: process(clk)
             begin
                 if rising_edge(clk)then
                     conta<=conta+1;
-                    if(conta<140000)then
+                    if(conta<50000000)then
                         pulso<='1';
                         conta<=0;
                     else
@@ -73,26 +72,37 @@ TX_prepara: process(clk, pulso)
 				);
             begin
                 --asc_dato(0):=valores(0);
-                if(pulso='1')then
-                    if rising_edge(clk)then								
-                        if(conta2=valor)then
-                            conta2<=0;
-                            INICIO<='1';
-									 asc_dato(0):=valores(i);
-                            dato<=asc_dato(0);
-                            if(i=13)then
-										  --comprobar valor
-                                i<=0;
-										  dato<=asc_dato(1);
-                            else
-                                i<=i+1;    
-                            end if;
-                        else
-                            conta2<=conta2+1;
-                            inicio<='0';    
-                        end if;
-                    end if;
-                end if;
+                if pulso = '1' then
+						  if rising_edge(clk) then
+								if conta2 = valor then
+									 conta2 <= 0;
+									 INICIO <= '1';							 
+									 if i = 14 then		
+											j<=4;
+										  --recorrer dato_bin
+											if(j > 0) then
+												if(SW(j-1) = '1') then
+														dato <= valores(15);
+														j <= j - 1;
+												else 
+														dato <= valores(14);
+														j <= j - 1;
+												end if;
+											else
+												dato <= asc_dato(1);
+												i <= 0;
+											end if;											
+									 else
+										  asc_dato(0):=valores(i);
+										  dato <= asc_dato(0);
+										  i <= i + 1;    
+									 end if;
+								else
+									 conta2 <= conta2 + 1;
+									 INICIO <= '0';    
+								end if;
+						  end if;
+					 end if;
                
             end process;
            
@@ -112,8 +122,9 @@ TX_envia: process(clk,inicio,dato)
                         PRE<=0;    
                     end if;
                     if(PRE=PRE_VAL/2)then
-                        TX_WIRE<=BUFF(INDICE);
+									TX_WIRE<=BUFF(INDICE);
                         if(INDICE<9)then
+									 
                             INDICE<=INDICE+1;
                         else
                             flag<='0';
@@ -122,30 +133,11 @@ TX_envia: process(clk,inicio,dato)
                     end if;
                 end if;
             end if;
-          end process;  
+          end process;   
          
 LED<=pulso;
 dato_bin<=SW;
-baud<="100";
-
-with(dato_bin)select
-    hex_val<=   X"30" when "0000",
-                X"31" when "0001",
-                X"32" when "0010",
-                X"33" when "0011",
-                X"34" when "0100",
-                X"35" when "0101",
-                X"36" when "0110",
-                X"37" when "0111",
-                X"38" when "1000",
-                X"39" when "1001",
-                X"41" when "1010",
-                X"42" when "1011",
-                X"43" when "1100",
-                X"44" when "1101",
-                X"45" when "1110",
-                X"46" when "1111",
-                X"23" when others;
+baud<="011";
                
 with(baud) select
     PRE_VAL <= 41600 when "000",     --1200  bauds
